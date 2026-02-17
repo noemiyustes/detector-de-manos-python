@@ -37,6 +37,8 @@ body {
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
 }
 
 button {
@@ -68,6 +70,7 @@ button[disabled] {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+  z-index: 1;
 }
 
 video,

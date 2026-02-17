@@ -153,3 +153,5 @@ startButton.addEventListener("click", startApp);
 stopButton.addEventListener("click", stopApp);
 
 window.addEventListener("resize", resizeCanvas);
+
+setStatus("Pulsa Iniciar cámara");
