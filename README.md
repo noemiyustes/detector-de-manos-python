@@ -105,6 +105,27 @@ pip install opencv-python mediapipe
 python main.py
 ```
 
+## Versión Web (para compartir en LinkedIn)
+
+Esta versión permite abrir un enlace y solicitar permiso de cámara desde el navegador.
+
+### Ejecutar en local
+
+```bash
+# Opción 1: usar el servidor estático de Python
+python -m http.server 5500
+```
+
+Luego abre: `http://localhost:5500/index.html`
+
+### Publicar en GitHub Pages
+
+1. Sube los archivos `index.html`, `style.css` y `app.js` al repositorio.
+2. En GitHub: Settings → Pages → Source → `main` / `root`.
+3. Guarda y espera a que se publique.
+
+El enlace HTTPS que genera GitHub Pages solicitará el permiso de cámara.
+
 ### Controles
 
 - **q**: Cerrar la aplicación
