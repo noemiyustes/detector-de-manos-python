@@ -34,7 +34,7 @@ async function createLandmarker() {
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.20/wasm"
   );
 
-  return HandLandmarker.createFromOptions(vision, {
+  const options = {
     baseOptions: {
       modelAssetPath:
         "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
@@ -42,7 +42,23 @@ async function createLandmarker() {
     },
     runningMode: "VIDEO",
     numHands: 2,
-  });
+    minHandDetectionConfidence: 0.5,
+    minHandPresenceConfidence: 0.5,
+    minTrackingConfidence: 0.5,
+  };
+
+  try {
+    return await HandLandmarker.createFromOptions(vision, options);
+  } catch (error) {
+    console.warn("Fallo en GPU, usando CPU", error);
+    return HandLandmarker.createFromOptions(vision, {
+      ...options,
+      baseOptions: {
+        ...options.baseOptions,
+        delegate: "CPU",
+      },
+    });
+  }
 }
 
 function resizeCanvas() {
@@ -94,6 +110,10 @@ function drawResults(results) {
 async function renderLoop() {
   if (!running || !handLandmarker) {
     return;
+  }
+
+  if (!canvas.width || !canvas.height) {
+    resizeCanvas();
   }
 
   if (video.currentTime !== lastVideoTime) {
@@ -168,5 +188,6 @@ startButton.addEventListener("click", startApp);
 stopButton.addEventListener("click", stopApp);
 
 window.addEventListener("resize", resizeCanvas);
+video.addEventListener("loadedmetadata", resizeCanvas);
 
 setStatus("Pulsa Iniciar cámara");
