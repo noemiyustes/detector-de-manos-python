@@ -29,15 +29,8 @@
       </footer>
     </main>
 
-    <script type="module">
-      const statusLabel = document.getElementById("status");
-      statusLabel.textContent = "Cargando aplicación...";
-
-      import("./app.js?v=2")
-        .catch((error) => {
-          console.error("Error cargando app.js", error);
-          statusLabel.textContent = `Error cargando app.js: ${error?.message || error}`;
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="app.js?v=3"></script>
   </body>
 </html>
