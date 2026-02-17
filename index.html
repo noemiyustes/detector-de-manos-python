@@ -29,6 +29,16 @@
       </footer>
     </main>
 
-    <script type="module" src="app.js?v=2"></script>
+    <script type="module">
+      const statusLabel = document.getElementById("status");
+      statusLabel.textContent = "Cargando aplicación...";
+
+      import("./app.js?v=2")
+        .catch((error) => {
+          console.error("Error cargando app.js", error);
+          statusLabel.textContent = `Error cargando app.js: ${error?.message || error}`;
+        });
+    </script>
   </body>
 </html>
+
