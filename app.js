@@ -1,8 +1,3 @@
-import {
-  FilesetResolver,
-  HandLandmarker,
-} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.20";
-
 const startButton = document.getElementById("startButton");
 const stopButton = document.getElementById("stopButton");
 const statusLabel = document.getElementById("status");
@@ -10,10 +5,9 @@ const video = document.getElementById("inputVideo");
 const canvas = document.getElementById("outputCanvas");
 const ctx = canvas.getContext("2d");
 
-let handLandmarker = null;
+let hands = null;
 let animationId = null;
 let running = false;
-let lastVideoTime = -1;
 
 function setStatus(text) {
   statusLabel.textContent = text;
@@ -29,38 +23,6 @@ function formatError(error) {
   return error.message || "Error desconocido.";
 }
 
-async function createLandmarker() {
-  const vision = await FilesetResolver.forVisionTasks(
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.20/wasm"
-  );
-
-  const options = {
-    baseOptions: {
-      modelAssetPath:
-        "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-      delegate: "GPU",
-    },
-    runningMode: "VIDEO",
-    numHands: 2,
-    minHandDetectionConfidence: 0.3,
-    minHandPresenceConfidence: 0.3,
-    minTrackingConfidence: 0.3,
-  };
-
-  try {
-    return await HandLandmarker.createFromOptions(vision, options);
-  } catch (error) {
-    console.warn("Fallo en GPU, usando CPU", error);
-    return HandLandmarker.createFromOptions(vision, {
-      ...options,
-      baseOptions: {
-        ...options.baseOptions,
-        delegate: "CPU",
-      },
-    });
-  }
-}
-
 function resizeCanvas() {
   const { videoWidth, videoHeight } = video;
   if (videoWidth && videoHeight) {
@@ -69,65 +31,43 @@ function resizeCanvas() {
   }
 }
 
-function drawLandmarks(landmarks) {
-  ctx.fillStyle = "#6c7bff";
-  for (const point of landmarks) {
-    const x = point.x * canvas.width;
-    const y = point.y * canvas.height;
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-function drawConnectors(landmarks, connections) {
-  ctx.strokeStyle = "#f5f7ff";
-  ctx.lineWidth = 2;
-  for (const [start, end] of connections) {
-    const startPoint = landmarks[start];
-    const endPoint = landmarks[end];
-    if (!startPoint || !endPoint) {
-      continue;
-    }
-    ctx.beginPath();
-    ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
-    ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
-    ctx.stroke();
-  }
-}
-
-function drawResults(results) {
+function onResults(results) {
+  ctx.save();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (results.landmarks) {
-    for (const landmarks of results.landmarks) {
-      drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS);
-      drawLandmarks(landmarks);
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    for (const landmarks of results.multiHandLandmarks) {
+      drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {
+        color: "#f5f7ff",
+        lineWidth: 2,
+      });
+      drawLandmarks(ctx, landmarks, {
+        color: "#6c7bff",
+        lineWidth: 2,
+      });
     }
+    setStatus(`Manos detectadas: ${results.multiHandLandmarks.length}`);
+  } else {
+    setStatus("Detectando manos...");
   }
+
+  ctx.restore();
 }
 
-async function renderLoop() {
-  if (!running || !handLandmarker) {
-    return;
-  }
+function initHands() {
+  hands = new Hands({
+    locateFile: (file) =>
+      `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+  });
 
-  if (!canvas.width || !canvas.height) {
-    resizeCanvas();
-  }
+  hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 0,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5,
+  });
 
-  if (video.currentTime !== lastVideoTime) {
-    lastVideoTime = video.currentTime;
-    const results = handLandmarker.detectForVideo(video, performance.now());
-    drawResults(results);
-    if (results.landmarks && results.landmarks.length > 0) {
-      setStatus(`Manos detectadas: ${results.landmarks.length}`);
-    } else {
-      setStatus("Detectando manos...");
-    }
-  }
-
-  animationId = requestAnimationFrame(renderLoop);
+  hands.onResults(onResults);
 }
 
 async function startCamera() {
@@ -148,13 +88,29 @@ async function startCamera() {
   setStatus("Cámara activa. Detectando manos...");
 }
 
+async function renderLoop() {
+  if (!running || !hands) {
+    return;
+  }
+
+  if (!canvas.width || !canvas.height) {
+    resizeCanvas();
+  }
+
+  if (video.readyState >= 2) {
+    await hands.send({ image: video });
+  }
+
+  animationId = requestAnimationFrame(renderLoop);
+}
+
 async function startApp() {
   try {
     startButton.disabled = true;
     setStatus("Cargando modelo...");
 
-    if (!handLandmarker) {
-      handLandmarker = await createLandmarker();
+    if (!hands) {
+      initHands();
     }
 
     await startCamera();
