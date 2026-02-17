@@ -42,9 +42,9 @@ async function createLandmarker() {
     },
     runningMode: "VIDEO",
     numHands: 2,
-    minHandDetectionConfidence: 0.5,
-    minHandPresenceConfidence: 0.5,
-    minTrackingConfidence: 0.5,
+    minHandDetectionConfidence: 0.3,
+    minHandPresenceConfidence: 0.3,
+    minTrackingConfidence: 0.3,
   };
 
   try {
@@ -75,7 +75,7 @@ function drawLandmarks(landmarks) {
     const x = point.x * canvas.width;
     const y = point.y * canvas.height;
     ctx.beginPath();
-    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -120,6 +120,11 @@ async function renderLoop() {
     lastVideoTime = video.currentTime;
     const results = handLandmarker.detectForVideo(video, performance.now());
     drawResults(results);
+    if (results.landmarks && results.landmarks.length > 0) {
+      setStatus(`Manos detectadas: ${results.landmarks.length}`);
+    } else {
+      setStatus("Detectando manos...");
+    }
   }
 
   animationId = requestAnimationFrame(renderLoop);
