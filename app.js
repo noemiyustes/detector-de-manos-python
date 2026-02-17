@@ -20,6 +20,16 @@ function setStatus(text) {
   statusLabel.textContent = text;
 }
 
+function formatError(error) {
+  if (!error) {
+    return "Error desconocido.";
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  return error.message || "Error desconocido.";
+}
+
 async function createLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.20/wasm"
@@ -82,11 +92,16 @@ async function renderLoop() {
 
 async function startCamera() {
   setStatus("Solicitando permiso de cámara...");
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error("Tu navegador no soporta cámara web.");
+  }
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: "user" },
     audio: false,
   });
 
+  video.muted = true;
+  video.setAttribute("muted", "");
   video.srcObject = stream;
   await video.play();
   resizeCanvas();
@@ -108,7 +123,7 @@ async function startApp() {
     renderLoop();
   } catch (error) {
     console.error(error);
-    setStatus("No se pudo iniciar la cámara.");
+    setStatus(`No se pudo iniciar la cámara: ${formatError(error)}`);
     startButton.disabled = false;
   }
 }
