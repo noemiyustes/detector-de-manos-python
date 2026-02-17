@@ -55,6 +55,13 @@ function onResults(results) {
 }
 
 function initHands() {
+  if (typeof Hands === "undefined") {
+    throw new Error("No se cargó la librería Hands.");
+  }
+  if (typeof drawConnectors === "undefined" || typeof drawLandmarks === "undefined") {
+    throw new Error("No se cargó drawing_utils.");
+  }
+
   hands = new Hands({
     locateFile: (file) =>
       `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
