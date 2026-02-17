@@ -1,7 +1,6 @@
 import {
   FilesetResolver,
   HandLandmarker,
-  DrawingUtils,
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.20";
 
 const startButton = document.getElementById("startButton");
@@ -54,24 +53,40 @@ function resizeCanvas() {
   }
 }
 
+function drawLandmarks(landmarks) {
+  ctx.fillStyle = "#6c7bff";
+  for (const point of landmarks) {
+    const x = point.x * canvas.width;
+    const y = point.y * canvas.height;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawConnectors(landmarks, connections) {
+  ctx.strokeStyle = "#f5f7ff";
+  ctx.lineWidth = 2;
+  for (const [start, end] of connections) {
+    const startPoint = landmarks[start];
+    const endPoint = landmarks[end];
+    if (!startPoint || !endPoint) {
+      continue;
+    }
+    ctx.beginPath();
+    ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
+    ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+    ctx.stroke();
+  }
+}
+
 function drawResults(results) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const drawingUtils = new DrawingUtils(ctx);
 
   if (results.landmarks) {
     for (const landmarks of results.landmarks) {
-      drawingUtils.drawLandmarks(landmarks, {
-        color: "#6c7bff",
-        lineWidth: 2,
-      });
-      drawingUtils.drawConnectors(
-        landmarks,
-        HandLandmarker.HAND_CONNECTIONS,
-        {
-          color: "#f5f7ff",
-          lineWidth: 2,
-        }
-      );
+      drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS);
+      drawLandmarks(landmarks);
     }
   }
 }
